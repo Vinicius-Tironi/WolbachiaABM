@@ -5,6 +5,7 @@ using CSV
 
 include("main.jl")
 
+# Calibrate carrying capacity K against monthly Wolbachia prevalence observed in Zone 3, using the historical release schedule.
 
 const MONTH_DAYS = Int64[
     31,28,31,30,31,30,31,31,30,31,30,31,
@@ -21,9 +22,13 @@ const MONTH_LABELS = vcat(
 )
 
 month_string(x) = first(replace(string(x), "_" => "-"), 7)
+
+# Apply the Anscombe transformation to observed and simulated proportions.
 anscombe(y::Real, n::Real) = asin(sqrt((y + 3.0 / 8.0) / (n + 3.0 / 4.0)))
 
 # HISTORICAL FIELD RELEASE SCHEDULE
+# Reconstruct the field release schedule for each zone.
+# Releases are specified by start day, number of weekly events, and mosquitoes released per event.
 function field_release_schedule(P::MosquitoParameters)
 
     P.weekly_release || return Dict{Int64,Int64}()
@@ -73,7 +78,7 @@ function field_release_schedule(P::MosquitoParameters)
     return release_schedule
 end
 
-
+# Load monthly monitoring data, retaining observations with positive sample sizes. The observed counts are used in the calibration objective.
 function load_observations(path::String, zone::Int64)
     rows = [(month = month_string(row.year_month), total = Int64(round(row.aeg_total)), wmel = Int64(round(row.aeg_wmel))) for row in CSV.File(path) if Int64(row.zone) == zone && row.aeg_total > 0]
     sort!(rows, by = row -> row.month)
@@ -85,7 +90,8 @@ function load_observations(path::String, zone::Int64)
     )
 end
 
-
+# Aggregate simulated adult abundance by calendar month.
+# Monthly prevalence is the ratio of infected to total adult mosquito-days accumulated over each month.
 function monthly_prevalence(free_ctr::Vector{Int64}, wolb_ctr::Vector{Int64}, burn_in_days::Int64, calendar_days::Int64)
     first_index = burn_in_days + 2
     last_index = burn_in_days + calendar_days + 1
@@ -112,7 +118,8 @@ function monthly_prevalence(free_ctr::Vector{Int64}, wolb_ctr::Vector{Int64}, bu
     return prevalence
 end
 
-
+# Measure the weighted squared distance between observed and simulated prevalence on the Anscombe-transformed scale.
+# Monthly weights reflect monitoring sample size, and simulations with undefined monthly prevalence receive an infinite score.
 function calculate_distance(simulated::Vector{Float64}, observed_transformed::Vector{Float64}, observed_totals::Vector{Int64}, weights::Vector{Float64})
     any(isnan, simulated) && return Inf
 
@@ -121,7 +128,8 @@ function calculate_distance(simulated::Vector{Float64}, observed_transformed::Ve
     return sum(weights .* (observed_transformed .- simulated_transformed).^2) / sum(weights)
 end
 
-
+# Save the model state at the end of burn-in for the selected K.
+# The snapshot preserves the adult and immature populations, model parameters, temperature history, and random seed.
 function save_burnin(result, P::MosquitoParameters, seed::Int64, burnin_dir::String)
     result.burnin_state === nothing && error("Burn-in snapshot was not generated")
 
@@ -152,7 +160,8 @@ function save_burnin(result, P::MosquitoParameters, seed::Int64, burnin_dir::Str
     return path
 end
 
-
+# Run stochastic replicate for a candidate K using the historical release schedule.
+# Compare simulated and observed monthly prevalence, and return the calibration score and population diagnostics.
 function evaluate_K(
     K::Float64,
     zone::Int64,
@@ -219,10 +228,9 @@ end
 
 
 
-# Replicated M1 K calibration. One SLURM job for the full K grid; Julia workers parallelize seeds.
-# Uses the original historical release design, Q objective, and observation weights.
-# Existing calibration, burn-in snapshots and other output directories are untouched.
-
+# Replicated calibration over K = 24,500:100:25,500, change const K_VALUES for different K values.
+# Each candidate is evaluated using 500 stochastic replicates with common seed identifiers across K values.
+# Julia workers distribute replicate evaluations within each candidate.
 if myid() == 1
     const MODEL_ROOT = dirname(@__DIR__)
     const PROJECT_ROOT = MODEL_ROOT
@@ -231,6 +239,8 @@ if myid() == 1
     const R = 500
     const FIRST_SEED = 20_001
 
+    # Summarize replicate-level calibration scores for each K.
+    # Select the carrying capacity with the lowest mean weighted distance, and report its variability across replicates.
     function aggregate_results!()
         rows = NamedTuple[]
         for K in K_VALUES
@@ -353,6 +363,7 @@ if myid() == 1
                  simulated_prevalence=x.monthly_simulated[m])
                 for x in results for m in eachindex(MONTH_LABELS)
             ]
+            # Write replicate scores and monthly trajectories through temporary files, then move them to their final filenames after completion.
             temp_replicates = output_csv * ".partial.$(getpid())"
             temp_trajectories = trajectory_csv * ".partial.$(getpid())"
             CSV.write(temp_replicates, rows)
@@ -363,7 +374,7 @@ if myid() == 1
             println("Completed K=$K_integer | mean Q=$(mean(q)) | sd Q=$(std(q))")
         end
 
-        # Combine per-K monthly trajectories into a single plotting CSV.
+        # Combine monthly trajectories from all K candidates into one dataset for subsequent visualization and comparison.
         combined_csv = joinpath(OUTPUT_DIR, "monthly_trajectories_R500.csv")
         if !isfile(combined_csv)
             temp_combined = combined_csv * ".partial.$(getpid())"
@@ -382,6 +393,7 @@ if myid() == 1
             mv(temp_combined, combined_csv; force=false)
         end
         println("Monthly trajectories: $combined_csv")
+        # Select the best-fitting K and generate its reproducible burn-in snapshot.
         selected_K = aggregate_results!()
         selected_burnin = evaluate_K(
             Float64(selected_K), 3, Int64(FIRST_SEED), 0.95, 1.0,
