@@ -187,7 +187,7 @@ function evaluate_K(
         calendar_days = calendar_days,
         weekly_release = true,
         natural_female_probability = 0.5,
-        release_female_probability = 3.0 / 7.0,
+        release_female_probability = 3.0 / 7.0, # Historical releases were slightly male-biased, with an estimated female-to-male ratio of 3:4 (Pinto et al., 2021).
         delta = delta,
         wolb_lifespan_multiplier = wolb_lifespan_multiplier,
         K = K,
