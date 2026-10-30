@@ -1,6 +1,6 @@
 WOLBACHIA ABM — ANALYSIS SCRIPTS
 ------------------
-This README describes the four Julia analysis scripts: EffGain.jl, MosqPestTTE.jl, Pareto.jl, and SMD_Calibration.jl, together with their corresponding SLURM launchers. All analyses use the Zone 3 model, environmental inputs, and a calibrated burn-in state.. Each analysis uses 500 simulation replicates per fully evaluated candidate to assess establishment outcomes, release strategies, or model calibration.
+This README describes the four Julia analysis scripts: EffGain.jl, MosqPestTTE.jl, Pareto.jl, and SMD_Calibration.jl, together with their corresponding SLURM launchers. All analyses use the Zone 3 model, environmental inputs, and a calibrated burn-in state. Each analysis uses 500 simulation replicates per fully evaluated candidate to assess establishment outcomes, release strategies, or model calibration.
 
 COMMON DEFINITIONS
 ------------------
@@ -12,21 +12,24 @@ A release effort is considered to achieve reliable establishment when the estima
 
 These definitions are applied across the analyses to distinguish establishment reliability from establishment speed. In particular, EffGain identifies the minimum release effort (M*) satisfying both criteria, corresponding to the first fast-establishment candidate identified by its search procedure, including downward verification. MosqPestTTE characterizes the transition between unsuccessful, slow, and fast establishment across the evaluated release-effort grid, while Pareto determines the minimum release effort based exclusively on the establishment probability criterion (P_est ≥ 0.90), after which the resulting establishment outcomes are classified as slow or fast according to the corresponding mean time to establishment.
 
+
 1. EffGain.jl — MINIMUM RELEASE EFFORT
 --------------------------------------
 
-The EffGain analysis determines the minimum total release effort (M*) required to achieve fast Wolbachia establishment for each release strategy (daily, weekly, and fortnightly) and seasonal allocation parameter alpha_S ∈ {1.0, 1.25, 1.50, 1.75, 2.0}. The allocation of released mosquitoes to the high-survival period follows M_HS ≈ (alpha_S / 2) M, with integer adjustments to ensure the prescribed total release effort.
+The EffGain analysis determines the minimum total release effort (M*) required to achieve fast Wolbachia establishment for each release strategy (daily, weekly, and fortnightly) and seasonal allocation parameter alpha_S ∈ {1.0, 1.1, 1.2, ..., 1.9, 2.0}. The allocation of released mosquitoes to the high-survival period follows M_HS ≈ (alpha_S / 2) M, with integer adjustments to ensure the prescribed total release effort.
 
 The search procedure first identifies the establishment threshold using coarse increments of 5,000 mosquitoes, followed by a refined search with increments of 1,000 mosquitoes. An additional downward verification examines every 1,000-mosquito increment within a 20,000-mosquito interval below the provisional M*, allowing the identification of qualifying release efforts that may have been missed during the initial search. Each candidate is evaluated using 500 independent simulation replicates, and the final M* must satisfy both the establishment probability and fast-establishment criteria.
 
-The corresponding efficiency gain is calculated as E_g = 100 × (1 − M*/630,000), where 630,000 mosquitoes represents the fixed reference release effort used for comparison rather than an upper bound on the search. For the manuscript figures, the release effort obtained under uniform seasonal allocation (alpha_S = 1.0) is additionally used as a strategy-specific reference, M_ref = M*(alpha_S = 1.0), to express the relative reduction in mosquito releases achieved through seasonal allocation.
+The corresponding efficiency gain is calculated as E_g = 100 × (1 − M*/M_ref), where M_ref = 630,000 mosquitoes represents the fixed reference release effort used for comparison rather than an upper bound on the search. For the manuscript figures, efficiency gains are calculated using the minimum release effort under uniform seasonal allocation (alpha_S = 1.0) as a strategy-specific reference, M_ref = M*(alpha_S = 1.0), to express the relative reduction in mosquito releases achieved through seasonal allocation.
+
 
 2. MosqPestTTE.jl — ESTABLISHMENT AND TIMING GRID
 -------------------------------------------------
 
-The MosqPestTTE analysis evaluates Wolbachia establishment probability and time to establishment (TTE) across a range of total release efforts for each release strategy (daily, weekly, and fortnightly) and seasonal allocation parameter alpha_S ∈ {1.0, 1.75, 2.0}. Starting from predefined release-effort values, the analysis systematically evaluates candidates at increments of 1,000 mosquitoes, with 500 independent simulation replicates per candidate.
+The MosqPestTTE analysis evaluates Wolbachia establishment probability and time to establishment (TTE) across a range of total release efforts for each release strategy (daily, weekly, and fortnightly) and seasonal allocation parameter alpha_S ∈ {1.0, 1.1, 1.2, ..., 1.9, 2.0}. Starting from predefined release-effort values for each strategy–allocation combination, the analysis systematically evaluates candidates at increments of 1,000 mosquitoes, with 500 independent simulation replicates per candidate.
 
 For each release effort, establishment probability and TTE statistics are calculated to characterize the transition between unsuccessful, slow, and fast establishment. The grid advances until five consecutive candidates satisfy both the establishment probability and fast-establishment criteria, providing a consistent stopping rule across the investigated strategies and seasonal allocations.
+
 
 3. Pareto.jl — RELEASE EVENTS AND EFFORT
 ----------------------------------------

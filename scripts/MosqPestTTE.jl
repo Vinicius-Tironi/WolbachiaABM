@@ -19,7 +19,7 @@ const MODEL_ENTRYPOINT = joinpath(@__DIR__, "main.jl")
 end
 
 # Establishment-yield grid (fig2)
-# R=500 replicates per candidate; alpha_S = 1.0, 1.75, 2.0; daily, weekly, fortnightly.
+# R=500 replicates per candidate; alpha_S = 1.0, 1.1, 1.2, ..., 1.9, 2.0; daily, weekly, fortnightly.
 # Allocate M_HS = alpha_S/2 * M, with integer release sizes; evaluate every 1,000 mosquitoes.
 # Establishment requires 30-day moving prevalence >= 0.60 from last release +30 through +730 days.
 # Establishment is classified as unsuccessful when P_est < 0.90.
@@ -31,7 +31,7 @@ end
 # Release design
 
 const VALID_STRATEGIES = [:daily, :weekly, :fortnightly]
-const ALPHAS = [1.0, 1.75, 2.0]
+const ALPHAS = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
 
 const REFERENCE_TOTAL_M = 630_000
 const MIN_TOTAL_M = 1_000
@@ -564,7 +564,7 @@ function write_configuration_csv()
         release_female_probability=RELEASE_FEMALE_PROBABILITY,
         alpha_first=first(ALPHAS),
         alpha_last=last(ALPHAS),
-        alpha_step="selected scenarios: 1.0, 1.75, 2.0",
+        alpha_step="1.0:0.1:2.0",
         number_alpha_values=length(ALPHAS),
         reference_M=REFERENCE_TOTAL_M,
         minimum_M=MIN_TOTAL_M,
@@ -815,17 +815,42 @@ end
 
 # Evaluate establishment probability and timing across a regular release-effort grid, using a predefined starting value for each strategy and seasonal allocation.
 # The grid advances in 1,000-mosquito increments until five consecutive candidates achieve fast establishment.
+
 const GRID_START_M = Dict(
     (:daily,       100) => 540_000,
-    (:weekly,      100) => 550_000,
-    (:fortnightly, 100) => 590_000,
-
-    (:daily,       175) => 400_000,
-    (:weekly,      175) => 410_000,
-    (:fortnightly, 175) => 450_000,
-
+    (:daily,       110) => 519_000,
+    (:daily,       120) => 501_000,
+    (:daily,       130) => 483_000,
+    (:daily,       140) => 463_000,
+    (:daily,       150) => 446_000,
+    (:daily,       160) => 428_000,
+    (:daily,       170) => 410_000,
+    (:daily,       180) => 400_000,
+    (:daily,       190) => 385_000,
     (:daily,       200) => 400_000,
+
+    (:weekly,      100) => 550_000,
+    (:weekly,      110) => 531_000,
+    (:weekly,      120) => 514_000,
+    (:weekly,      130) => 496_000,
+    (:weekly,      140) => 478_000,
+    (:weekly,      150) => 461_000,
+    (:weekly,      160) => 441_000,
+    (:weekly,      170) => 426_000,
+    (:weekly,      180) => 415_000,
+    (:weekly,      190) => 400_000,
     (:weekly,      200) => 420_000,
+
+    (:fortnightly, 100) => 590_000,
+    (:fortnightly, 110) => 570_000,
+    (:fortnightly, 120) => 553_000,
+    (:fortnightly, 130) => 536_000,
+    (:fortnightly, 140) => 518_000,
+    (:fortnightly, 150) => 501_000,
+    (:fortnightly, 160) => 484_000,
+    (:fortnightly, 170) => 467_000,
+    (:fortnightly, 180) => 457_000,
+    (:fortnightly, 190) => 444_000,
     (:fortnightly, 200) => 470_000,
 )
 

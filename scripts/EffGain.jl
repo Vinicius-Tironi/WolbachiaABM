@@ -20,7 +20,7 @@ end
 
 # EffGain: minimum release effort and efficiency gain experiment (fig1) 
 # R=500 replicates per candidate, for each strategy and alpha.
-# Seasonal allocation: alpha_S = 1.0, 1.25, 1.50, 1.75, 2.0
+# Seasonal allocation: alpha_S = 1.0, 1.1, 1.2, ..., 1.9, 2.0
 # Candidate release allocation: M_HS = alpha_S/2 * M; M_outside = M - M_HS
 # Establishment: 30-day moving prevalence >= 0.60 from last release +30 through +730 days.
 # Search uses 5,000-mosquito coarse and 1,000-mosquito fine steps, followed by a 20,000-mosquito downward verification; M_ref = 630,000 is a reference value, not a search ceiling
@@ -28,14 +28,14 @@ end
 #(i) P_est(M) >= 0.90; (ii) mean TTE among persistently established replicates <= T_max(alpha_S), T_max = {365 days, alpha<2; 182 days, alpha=2}
 # Afterwards, efficiency_gain = 100.0 * (1 - M_star / M_ref)
 # Finally, the selected M* must satisfy both the establishment (P_est >= 0.90) and mean-TTE (rounded mean TTE <= T_max) criteria. A downward verification
-# evaluates all candidates at 1,000-mosquito increments within 20,000 mosquitoes below the provisional M*, retaining the smallest qualifying effort. The
-# immediate predecessor (M* - 1,000) is also explicitly verified to be nonqualifying.
+# evaluates all candidates at 1,000-mosquito increments within 20,000 mosquitoes below the provisional M*, retaining the smallest qualifying effort.
+# The immediate predecessor (M* - 1,000) is also explicitly verified to be nonqualifying.
 
 
 # Release design
 
 const VALID_STRATEGIES = [:daily, :weekly, :fortnightly]
-const ALPHAS = Float64[1.0, 1.25, 1.50, 1.75, 2.0]
+const ALPHAS = Float64[1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
 
 const REFERENCE_TOTAL_M = 630_000
 const MIN_TOTAL_M = 1_000
